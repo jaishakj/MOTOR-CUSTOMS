@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lombok Custom — Motor Customs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --orange: #FF4D00;
+    --white: #F5F0E8;
+    --black: #0A0A0A;
+    --dark: #111111;
+    --gray: #1A1A1A;
+    --muted: #555;
+    --font-display: 'Barlow Condensed', sans-serif;
+    --font-body: 'Barlow', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* CUSTOM CURSOR */
+  .cursor {
+    position: fixed;
+    width: 10px; height: 10px;
+    background: var(--orange);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.08s ease, width 0.2s ease, height 0.2s ease, background 0.2s ease;
+    mix-blend-mode: difference;
+  }
+  .cursor-ring {
+    position: fixed;
+    width: 36px; height: 36px;
+    border: 1.5px solid rgba(255,77,0,0.5);
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.18s ease, width 0.25s ease, height 0.25s ease, opacity 0.2s ease;
+  }
+  body:hover .cursor { opacity: 1; }
+  a:hover ~ .cursor, button:hover ~ .cursor { transform: translate(-50%,-50%) scale(2); }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: var(--black); }
+  ::-webkit-scrollbar-thumb { background: var(--orange); }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 48px;
+    mix-blend-mode: difference;
+    transition: padding 0.4s ease;
+  }
+  nav.scrolled { padding: 16px 48px; }
+  nav::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  nav.scrolled::before { opacity: 1; }
+
+  .nav-logo {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 18px;
+    letter-spacing: 0.05em;
+    line-height: 1;
+    color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo span { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.2em; color: var(--orange); }
+
+  .nav-links {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+  }
+  .nav-links a {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--white);
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.2s, color 0.2s;
+  }
+  .nav-links a:hover { opacity: 1; color: var(--orange); }
+
+  .nav-cta {
+    width: 36px; height: 36px;
+    border: 1.5px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .nav-cta:hover { border-color: var(--orange); background: var(--orange); }
+  .nav-cta svg { width: 14px; height: 14px; fill: var(--white); }
+
+  /* HERO */
+  #hero {
+    position: relative;
+    height: 100vh;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+
+  .hero-bg {
+    position: absolute;
+    inset: 0;
+    background: #0A0A0A;
+  }
+
+  /* DAY / NIGHT SLIDES */
+  .hero-slide {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    transform: scale(1.06);
+    transition: opacity 1.6s cubic-bezier(0.4,0,0.2,1), transform 8s ease-out;
+    will-change: opacity, transform;
+  }
+  .hero-slide.active {
+    opacity: 1;
+    transform: scale(1);
+  }
+  /* DAY slide — replace src with your daytime photo */
+  .hero-slide.day {
+    background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1600&q=80');
+  }
+  /* NIGHT slide — replace src with your nighttime photo */
+  .hero-slide.night {
+    background-image: url('https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1600&q=80');
+  }
+
+  /* colour overlay shifts with theme */
+  .hero-slide.day::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(10,40,80,0.25) 0%, rgba(0,0,0,0.45) 100%);
+  }
+  .hero-slide.night::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,20,0.35) 0%, rgba(0,0,0,0.65) 100%);
+  }
+
+  /* Theme pill indicator */
+  .hero-theme-indicator {
+    position: absolute;
+    bottom: 80px;
+    left: 48px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .theme-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px 6px 8px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    cursor: pointer;
+    transition: border-color 0.3s, color 0.3s, background 0.3s;
+    background: rgba(0,0,0,0.3);
+    backdrop-filter: blur(8px);
+  }
+  .theme-pill:hover { border-color: rgba(255,255,255,0.5); color: var(--white); }
+  .theme-pill.active-pill { border-color: var(--orange); color: var(--white); background: rgba(255,77,0,0.15); }
+  .theme-pill-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    transition: background 0.3s;
+  }
+  .theme-pill.day-pill .theme-pill-dot { background: #FFD700; }
+  .theme-pill.night-pill .theme-pill-dot { background: #8888FF; }
+
+  /* nav text colour adapts */
+  .hero-bg-img {
+    display: none; /* replaced */
+  }
+
+  .hero-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+  }
+
+  .hero-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .hero-scroll-indicator {
+    position: absolute;
+    left: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 2;
+  }
+  .scroll-dots { display: flex; flex-direction: column; gap: 8px; }
+  .scroll-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    transition: background 0.3s, transform 0.3s;
+  }
+  .scroll-dot.active { background: var(--orange); transform: scale(1.4); }
+
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    padding: 0 48px 80px;
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: flex-end;
+  }
+
+  .hero-text {
+    text-align: right;
+    max-width: 600px;
+  }
+
+  .hero-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.8s ease 0.2s, transform 0.8s ease 0.2s;
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(80px, 12vw, 160px);
+    line-height: 0.88;
+    letter-spacing: -0.02em;
+    text-transform: uppercase;
+    color: var(--white);
+    opacity: 0;
+    transform: translateY(40px);
+    transition: opacity 0.9s ease 0.4s, transform 0.9s ease 0.4s;
+  }
+  .hero-title .outline {
+    -webkit-text-stroke: 2px var(--white);
+    color: transparent;
+  }
+
+  .hero-divider {
+    width: 80px;
+    height: 2px;
+    background: var(--orange);
+    margin: 24px 0 24px auto;
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: opacity 0.6s ease 0.8s, transform 0.6s ease 0.8s;
+  }
+
+  .hero-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.6s ease 1s, transform 0.6s ease 1s;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 28px;
+    border: 1.5px solid var(--orange);
+    color: var(--orange);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: none;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.6s ease 1.2s, transform 0.6s ease 1.2s, color 0.3s, background 0.3s;
+  }
+  .hero-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--orange);
+    transform: translateX(-101%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    z-index: -1;
+  }
+  .hero-cta:hover { color: var(--black); }
+  .hero-cta:hover::before { transform: translateX(0); }
+  .hero-cta svg { width: 14px; height: 14px; fill: currentColor; transition: transform 0.3s; }
+  .hero-cta:hover svg { transform: translateX(4px); }
+
+  .hero-loaded .hero-eyebrow,
+  .hero-loaded .hero-title,
+  .hero-loaded .hero-divider,
+  .hero-loaded .hero-sub,
+  .hero-loaded .hero-cta {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* MARQUEE */
+  .marquee-strip {
+    background: var(--orange);
+    overflow: hidden;
+    padding: 12px 0;
+    white-space: nowrap;
+  }
+  .marquee-track {
+    display: inline-flex;
+    gap: 0;
+    animation: marquee 20s linear infinite;
+  }
+  .marquee-item {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--black);
+    padding: 0 32px;
+  }
+  .marquee-item span { color: rgba(0,0,0,0.4); margin: 0 8px; }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  /* SECTIONS BASE */
+  section { position: relative; }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .reveal-left {
+    opacity: 0;
+    transform: translateX(-50px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal-left.visible { opacity: 1; transform: translateX(0); }
+  .reveal-right {
+    opacity: 0;
+    transform: translateX(50px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  .reveal-right.visible { opacity: 1; transform: translateX(0); }
+
+  /* SECTION LABEL */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--orange);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::before {
+    content: '';
+    display: block;
+    width: 24px;
+    height: 1.5px;
+    background: var(--orange);
+  }
+
+  /* JALUR / SERVICES */
+  #jalur {
+    background: var(--dark);
+    padding: 120px 48px;
+  }
+
+  .jalur-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 64px;
+  }
+
+  .jalur-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(60px, 8vw, 100px);
+    text-transform: uppercase;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+  }
+
+  .jalur-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    border: 1.5px solid var(--orange);
+    color: var(--orange);
+    padding: 6px 12px;
+    text-transform: uppercase;
+  }
+
+  .jalur-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    grid-template-rows: auto auto;
+    gap: 12px;
+  }
+
+  .jalur-card {
+    position: relative;
+    overflow: hidden;
+    cursor: none;
+    background: var(--gray);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: border-color 0.3s, transform 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .jalur-card:hover { border-color: var(--orange); transform: translateY(-4px); }
+
+  .jalur-card-inner { padding: 32px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; min-height: 200px; }
+  .jalur-card.featured .jalur-card-inner { min-height: 180px; }
+  .jalur-card.featured { background: var(--orange); grid-column: 2; }
+  .jalur-card.featured .card-num, .jalur-card.featured .card-title, .jalur-card.featured .card-sub, .jalur-card.featured .card-icon { color: var(--black); }
+  .jalur-card.featured .card-icon path { fill: var(--black); }
+
+  .jalur-card.span-col { grid-row: 2; grid-column: 2; }
+
+  .card-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 40px;
+  }
+  .jalur-card.featured .card-num { color: rgba(0,0,0,0.5); }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .card-title svg { width: 18px; height: 18px; fill: currentColor; }
+
+  .card-sub {
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    letter-spacing: 0.05em;
+    line-height: 1.5;
+    font-family: var(--font-mono);
+  }
+  .jalur-card.featured .card-sub { color: rgba(0,0,0,0.6); }
+
+  .card-icon {
+    align-self: flex-end;
+    width: 36px; height: 36px;
+    border: 1.5px solid rgba(255,255,255,0.2);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .jalur-card:hover .card-icon { background: var(--orange); border-color: var(--orange); }
+  .jalur-card.featured .card-icon { border-color: rgba(0,0,0,0.3); }
+  .jalur-card.featured:hover .card-icon { background: rgba(0,0,0,0.15); border-color: rgba(0,0,0,0.4); }
+  .card-icon svg { width: 16px; height: 16px; fill: rgba(255,255,255,0.7); }
+  .jalur-card.featured .card-icon svg { fill: rgba(0,0,0,0.7); }
+
+  /* PORTFOLIO / KARYA KAMI */
+  #karya {
+    background: var(--black);
+    padding: 120px 0;
+  }
+
+  .karya-header {
+    padding: 0 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 64px;
+  }
+
+  .karya-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(60px, 8vw, 100px);
+    text-transform: uppercase;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+  }
+
+  .karya-nav {
+    display: flex;
+    gap: 8px;
+  }
+  .karya-btn {
+    width: 44px; height: 44px;
+    border: 1.5px solid rgba(255,255,255,0.15);
+    background: transparent;
+    color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    cursor: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .karya-btn:hover { border-color: var(--orange); background: var(--orange); }
+  .karya-btn svg { width: 16px; height: 16px; fill: currentColor; }
+
+  .karya-track-container {
+    overflow: hidden;
+    padding: 0 48px;
+  }
+
+  .karya-track {
+    display: flex;
+    gap: 12px;
+    transition: transform 0.7s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .karya-item {
+    position: relative;
+    flex: 0 0 auto;
+    overflow: hidden;
+    cursor: none;
+    background: var(--gray);
+    transition: flex 0.7s cubic-bezier(0.4,0,0.2,1);
+  }
+  .karya-item { width: 90px; height: 340px; }
+  .karya-item.active { width: 480px; }
+
+  .karya-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(80%);
+    transition: filter 0.5s ease, transform 0.6s ease;
+  }
+  .karya-item.active .karya-img { filter: grayscale(0%); transform: scale(1.02); }
+  .karya-item:hover .karya-img { filter: grayscale(40%); }
+
+  .karya-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .karya-item.active .karya-overlay { opacity: 1; }
+
+  .karya-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 24px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
+  }
+  .karya-item.active .karya-info { opacity: 1; transform: translateY(0); }
+
+  .karya-item-name {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 22px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+  }
+
+  .karya-item-meta {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .karya-item-label {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) rotate(-90deg);
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    letter-spacing: 0.25em;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    transition: opacity 0.3s;
+  }
+  .karya-item.active .karya-item-label { opacity: 0; }
+
+  /* STATS */
+  #stats {
+    background: var(--orange);
+    padding: 80px 48px;
+    overflow: hidden;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: rgba(0,0,0,0.15);
+  }
+  .stat-item {
+    background: var(--orange);
+    padding: 48px 32px;
+    text-align: center;
+    position: relative;
+  }
+  .stat-num {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 72px;
+    color: var(--black);
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .stat-unit {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 36px;
+    color: rgba(0,0,0,0.5);
+  }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: rgba(0,0,0,0.6);
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  /* PROSES */
+  #proses {
+    background: var(--dark);
+    padding: 120px 48px;
+  }
+
+  .proses-header { margin-bottom: 80px; }
+  .proses-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(60px, 8vw, 100px);
+    text-transform: uppercase;
+    line-height: 0.9;
+    letter-spacing: -0.02em;
+  }
+
+  .proses-list { display: flex; flex-direction: column; gap: 0; }
+
+  .proses-item {
+    display: grid;
+    grid-template-columns: 80px 1fr 80px;
+    align-items: center;
+    padding: 32px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    cursor: none;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .proses-item::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--orange);
+    transform: translateX(-101%);
+    transition: transform 0.4s cubic-bezier(0.4,0,0.2,1);
+    z-index: 0;
+  }
+  .proses-item:hover::before { transform: translateX(0); }
+  .proses-item:hover .proses-num,
+  .proses-item:hover .proses-name,
+  .proses-item:hover .proses-desc { color: var(--black) !important; }
+  .proses-item > * { position: relative; z-index: 1; }
+
+  .proses-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--orange);
+    transition: color 0.3s;
+  }
+  .proses-item:hover .proses-num { color: rgba(0,0,0,0.5); }
+
+  .proses-name {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 32px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    transition: color 0.3s;
+  }
+
+  .proses-desc {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.4);
+    text-align: right;
+    transition: color 0.3s;
+  }
+
+  /* KONTAK */
+  #kontak {
+    background: var(--black);
+    padding: 120px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .kontak-bg-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 30vw;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.02);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    letter-spacing: -0.05em;
+  }
+
+  .kontak-inner {
+    position: relative;
+    z-index: 1;
+    max-width: 800px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .kontak-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(60px, 9vw, 120px);
+    text-transform: uppercase;
+    line-height: 0.9;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+  }
+  .kontak-title .stroke {
+    -webkit-text-stroke: 2px rgba(255,255,255,0.4);
+    color: transparent;
+  }
+
+  .kontak-sub {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    margin-bottom: 48px;
+    line-height: 1.8;
+  }
+
+  .kontak-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 40px;
+    background: var(--orange);
+    color: var(--black);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: none;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+  .kontak-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.15);
+    transform: translateX(-101%);
+    transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  .kontak-cta:hover::before { transform: translateX(0); }
+  .kontak-cta:hover { transform: translateY(-2px); box-shadow: 0 20px 60px rgba(255,77,0,0.3); }
+  .kontak-cta svg { width: 18px; height: 18px; fill: currentColor; }
+
+  /* FOOTER */
+  footer {
+    background: var(--dark);
+    padding: 40px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .footer-logo {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 16px;
+    letter-spacing: 0.1em;
+    color: var(--white);
+    opacity: 0.5;
+  }
+  .footer-copy {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.25);
+    text-transform: uppercase;
+  }
+  .footer-socials { display: flex; gap: 20px; }
+  .footer-socials a {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.3);
+    text-decoration: none;
+    text-transform: uppercase;
+    cursor: none;
+    transition: color 0.2s;
+  }
+  .footer-socials a:hover { color: var(--orange); }
+
+  /* PARALLAX */
+  .parallax-layer { will-change: transform; }
+
+  /* Loader */
+  #loader {
+    position: fixed;
+    inset: 0;
+    background: var(--black);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+  }
+  #loader.hidden { opacity: 0; visibility: hidden; }
+  .loader-logo {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--white);
+    overflow: hidden;
+  }
+  .loader-logo span { color: var(--orange); }
+  .loader-bar-container {
+    width: 200px;
+    height: 2px;
+    background: rgba(255,255,255,0.1);
+    overflow: hidden;
+  }
+  .loader-bar {
+    height: 100%;
+    background: var(--orange);
+    width: 0%;
+    transition: width 0.05s linear;
+  }
+  .loader-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    color: rgba(255,255,255,0.3);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    nav { padding: 20px 24px; }
+    .nav-links { display: none; }
+    #hero .hero-content { padding: 0 24px 60px; }
+    #jalur, #proses, #kontak { padding: 80px 24px; }
+    .jalur-grid { grid-template-columns: 1fr; }
+    .jalur-card.featured { grid-column: 1; }
+    .jalur-card.span-col { grid-row: auto; grid-column: 1; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .proses-item { grid-template-columns: 60px 1fr; }
+    .proses-desc { display: none; }
+    footer { flex-direction: column; gap: 24px; text-align: center; }
+    .karya-header, #karya { padding: 80px 24px; }
+    .karya-track-container { padding: 0 24px; }
+    .karya-item.active { width: 280px; }
+    .hero-scroll-indicator { display: none; }
+    .jalur-header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo">LOMBOK <span>CUSTOM</span></div>
+  <div class="loader-bar-container"><div class="loader-bar" id="loaderBar"></div></div>
+  <div class="loader-num" id="loaderNum">000</div>
+</div>
+
+<!-- CURSOR -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <a href="#hero" class="nav-logo">LOMBOK<span>CUSTOM</span></a>
+  <ul class="nav-links">
+    <li><a href="#jalur">Layanan</a></li>
+    <li><a href="#karya">Portfolio</a></li>
+    <li><a href="#proses">Proses</a></li>
+    <li><a href="#kontak">Kontak</a></li>
+  </ul>
+  <div class="nav-cta">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-bg">
+    <!-- DAY: swap background-image in CSS .hero-slide.day or set src here -->
+    <div class="hero-slide day active" id="slideDay"></div>
+    <!-- NIGHT: swap background-image in CSS .hero-slide.night or set src here -->
+    <div class="hero-slide night" id="slideNight"></div>
+  </div>
+  <div class="hero-vignette"></div>
+  <div class="hero-grain"></div>
+
+  <div class="hero-scroll-indicator">
+    <div class="scroll-dots" id="scrollDots">
+      <div class="scroll-dot active"></div>
+      <div class="scroll-dot"></div>
+      <div class="scroll-dot"></div>
+      <div class="scroll-dot"></div>
+      <div class="scroll-dot"></div>
+    </div>
+  </div>
+
+  <!-- DAY / NIGHT TOGGLE PILLS -->
+  <div class="hero-theme-indicator">
+    <div class="theme-pill day-pill active-pill" id="pillDay" onclick="setTheme('day')">
+      <div class="theme-pill-dot"></div>
+      Siang
+    </div>
+    <div class="theme-pill night-pill" id="pillNight" onclick="setTheme('night')">
+      <div class="theme-pill-dot"></div>
+      Malam
+    </div>
+  </div>
+
+  <div class="hero-content">
+    <div class="hero-text" id="heroText">
+      <div class="hero-eyebrow">— Bengkel Kustom Premium</div>
+      <h1 class="hero-title">MOTOR<br><span class="outline">CUSTOMS</span></h1>
+      <div class="hero-divider"></div>
+      <p class="hero-sub">Rakit Motor Impian-Mu.</p>
+      <a href="#jalur" class="hero-cta">
+        Gas Rakit
+        <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-strip">
+  <div class="marquee-track">
+    <div class="marquee-item">Custom Build <span>✦</span></div>
+    <div class="marquee-item">Scrambler <span>✦</span></div>
+    <div class="marquee-item">Street Tracker <span>✦</span></div>
+    <div class="marquee-item">Cafe Racer <span>✦</span></div>
+    <div class="marquee-item">Adventure <span>✦</span></div>
+    <div class="marquee-item">Lombok Custom <span>✦</span></div>
+    <div class="marquee-item">Rakit Impian <span>✦</span></div>
+    <div class="marquee-item">Custom Build <span>✦</span></div>
+    <div class="marquee-item">Scrambler <span>✦</span></div>
+    <div class="marquee-item">Street Tracker <span>✦</span></div>
+    <div class="marquee-item">Cafe Racer <span>✦</span></div>
+    <div class="marquee-item">Adventure <span>✦</span></div>
+    <div class="marquee-item">Lombok Custom <span>✦</span></div>
+    <div class="marquee-item">Rakit Impian <span>✦</span></div>
+  </div>
+</div>
+
+<!-- JALUR / SERVICES -->
+<section id="jalur">
+  <div class="jalur-header">
+    <div>
+      <div class="section-label reveal">Pilih Jalurmu</div>
+      <h2 class="jalur-title reveal">PILIH<br>JALUR</h2>
+    </div>
+    <div class="jalur-badge reveal">OP : 02</div>
+  </div>
+
+  <div class="jalur-grid">
+    <div class="jalur-card reveal-left" style="transition-delay:0.1s">
+      <div class="jalur-card-inner">
+        <div>
+          <div class="card-num">JALUR :: 01</div>
+          <div class="card-title">
+            <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96C5 16.1 6.9 18 9 18h12v-2H9.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63H19c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+            Beli Jadi
+          </div>
+          <div class="card-sub">Langsung angkut motor custom yang udah jadi.</div>
+        </div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="jalur-card featured reveal-right" style="transition-delay:0.15s">
+      <div class="jalur-card-inner">
+        <div>
+          <div class="card-num">JALUR :: 02</div>
+          <div class="card-title">
+            <svg viewBox="0 0 24 24"><path d="M21 6.5l-4-4-9.5 9.5-1.5 5.5 5.5-1.5L21 6.5zm-14.5 9l-1.5-1.5L16 3l1.5 1.5L6.5 15.5z"/></svg>
+            Bawa Motor
+          </div>
+          <div class="card-sub">Rombak total tunggangan lu saat ini.</div>
+        </div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="jalur-card span-col reveal" style="transition-delay:0.2s">
+      <div class="jalur-card-inner">
+        <div>
+          <div class="card-num">JALUR :: 03</div>
+          <div class="card-title">
+            <svg viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/></svg>
+            Sesuaikan Budget
+          </div>
+          <div class="card-sub">Rakit bertahap sesuai isi dompet lu.</div>
+        </div>
+        <div class="card-icon">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- KARYA -->
+<section id="karya">
+  <div class="karya-header">
+    <div>
+      <div class="section-label reveal">Portfolio Kami</div>
+      <h2 class="karya-title reveal">KARYA<br>KAMI</h2>
+    </div>
+    <div class="karya-nav reveal">
+      <button class="karya-btn" id="karyaPrev">
+        <svg viewBox="0 0 24 24"><path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6z"/></svg>
+      </button>
+      <button class="karya-btn" id="karyaNext">
+        <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="karya-track-container">
+    <div class="karya-track" id="karyaTrack">
+      <div class="karya-item active" data-index="0" onclick="setActiveKarya(0)">
+        <img class="karya-img" src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80" alt="Desert Fox">
+        <div class="karya-overlay"></div>
+        <div class="karya-info">
+          <div class="karya-item-name">Urban Scrambler</div>
+          <div class="karya-item-meta">Base: CT-125 | Engine: 125cc SOHC | Style: Street Tracker</div>
+        </div>
+        <div class="karya-item-label">Urban Scrambler</div>
+      </div>
+      <div class="karya-item" data-index="1" onclick="setActiveKarya(1)">
+        <img class="karya-img" src="https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800&q=80" alt="Desert Fox">
+        <div class="karya-overlay"></div>
+        <div class="karya-info">
+          <div class="karya-item-name">Desert Fox</div>
+          <div class="karya-item-meta">Base: XSR155 | Engine: 155cc VVA | Style: Scrambler</div>
+        </div>
+        <div class="karya-item-label">Desert Fox</div>
+      </div>
+      <div class="karya-item" data-index="2" onclick="setActiveKarya(2)">
+        <img class="karya-img" src="https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800&q=80" alt="Night Rider">
+        <div class="karya-overlay"></div>
+        <div class="karya-info">
+          <div class="karya-item-name">Night Rider</div>
+          <div class="karya-item-meta">Base: CB150R | Engine: 149cc DOHC | Style: Cafe Racer</div>
+        </div>
+        <div class="karya-item-label">Night Rider</div>
+      </div>
+      <div class="karya-item" data-index="3" onclick="setActiveKarya(3)">
+        <img class="karya-img" src="https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=800&q=80" alt="Iron Wolf">
+        <div class="karya-overlay"></div>
+        <div class="karya-info">
+          <div class="karya-item-name">Iron Wolf</div>
+          <div class="karya-item-meta">Base: Ninja 250 | Engine: 249cc Twin | Style: Tracker</div>
+        </div>
+        <div class="karya-item-label">Iron Wolf</div>
+      </div>
+      <div class="karya-item" data-index="4" onclick="setActiveKarya(4)">
+        <img class="karya-img" src="https://images.unsplash.com/photo-1558981285-6f0c8cbbd0b4?w=800&q=80" alt="Sand Storm">
+        <div class="karya-overlay"></div>
+        <div class="karya-info">
+          <div class="karya-item-name">Sand Storm</div>
+          <div class="karya-item-meta">Base: KLX150 | Engine: 150cc | Style: Enduro Custom</div>
+        </div>
+        <div class="karya-item-label">Sand Storm</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="stats">
+  <div class="stats-grid">
+    <div class="stat-item reveal" style="transition-delay:0s">
+      <div class="stat-num" data-target="150">0</div><span class="stat-unit">+</span>
+      <div class="stat-label">Motor Terbangun</div>
+    </div>
+    <div class="stat-item reveal" style="transition-delay:0.1s">
+      <div class="stat-num" data-target="7">0</div><span class="stat-unit">+</span>
+      <div class="stat-label">Tahun Pengalaman</div>
+    </div>
+    <div class="stat-item reveal" style="transition-delay:0.2s">
+      <div class="stat-num" data-target="12">0</div><span class="stat-unit"></span>
+      <div class="stat-label">Style Custom</div>
+    </div>
+    <div class="stat-item reveal" style="transition-delay:0.3s">
+      <div class="stat-num" data-target="98">0</div><span class="stat-unit">%</span>
+      <div class="stat-label">Kepuasan Klien</div>
+    </div>
+  </div>
+</section>
+
+<!-- PROSES -->
+<section id="proses">
+  <div class="proses-header">
+    <div class="section-label reveal">Cara Kerja</div>
+    <h2 class="proses-title reveal">PROSES<br>KAMI</h2>
+  </div>
+
+  <div class="proses-list">
+    <div class="proses-item reveal" style="transition-delay:0.05s">
+      <div class="proses-num">01</div>
+      <div class="proses-name">Konsultasi</div>
+      <div class="proses-desc">Diskusi visi & budget</div>
+    </div>
+    <div class="proses-item reveal" style="transition-delay:0.1s">
+      <div class="proses-num">02</div>
+      <div class="proses-name">Desain & Mock-up</div>
+      <div class="proses-desc">3D visual preview</div>
+    </div>
+    <div class="proses-item reveal" style="transition-delay:0.15s">
+      <div class="proses-num">03</div>
+      <div class="proses-name">Approval</div>
+      <div class="proses-desc">Final sign-off</div>
+    </div>
+    <div class="proses-item reveal" style="transition-delay:0.2s">
+      <div class="proses-num">04</div>
+      <div class="proses-name">Proses Build</div>
+      <div class="proses-desc">Pengerjaan detail</div>
+    </div>
+    <div class="proses-item reveal" style="transition-delay:0.25s">
+      <div class="proses-num">05</div>
+      <div class="proses-name">Quality Check</div>
+      <div class="proses-desc">Test & inspeksi</div>
+    </div>
+    <div class="proses-item reveal" style="transition-delay:0.3s">
+      <div class="proses-num">06</div>
+      <div class="proses-name">Serah Terima</div>
+      <div class="proses-desc">Motor siap jalan</div>
+    </div>
+  </div>
+</section>
+
+<!-- KONTAK -->
+<section id="kontak">
+  <div class="kontak-bg-text">GAS</div>
+  <div class="kontak-inner">
+    <div class="section-label reveal" style="justify-content:center">Siap Mulai?</div>
+    <h2 class="kontak-title reveal">
+      GAS<br><span class="stroke">RAKIT</span>
+    </h2>
+    <p class="kontak-sub reveal" style="transition-delay:0.15s">
+      Ceritain motor impian lo.<br>Kita wujudin bareng.
+    </p>
+    <a href="https://wa.me/6281234567890" class="kontak-cta reveal" style="transition-delay:0.25s">
+      Hubungi Sekarang
+      <svg viewBox="0 0 24 24"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6z"/></svg>
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">LOMBOK CUSTOM</div>
+  <div class="footer-copy">© 2024 Lombok Custom. All rights reserved.</div>
+  <div class="footer-socials">
+    <a href="#">Instagram</a>
+    <a href="#">TikTok</a>
+    <a href="#">WhatsApp</a>
+  </div>
+</footer>
+
+<script>
+// LOADER
+const loaderBar = document.getElementById('loaderBar');
+const loaderNum = document.getElementById('loaderNum');
+const loader = document.getElementById('loader');
+let progress = 0;
+const loadInterval = setInterval(() => {
+  progress += Math.random() * 15;
+  if (progress >= 100) {
+    progress = 100;
+    clearInterval(loadInterval);
+    setTimeout(() => {
+      loader.classList.add('hidden');
+      document.getElementById('heroText').classList.add('hero-loaded');
+      document.getElementById('heroBg').classList.add('loaded');
+    }, 300);
+  }
+  loaderBar.style.width = progress + '%';
+  loaderNum.textContent = String(Math.floor(progress)).padStart(3, '0');
+}, 60);
+
+// CURSOR
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animCursor() {
+  cursor.style.left = mx + 'px';
+  cursor.style.top = my + 'px';
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top = ry + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+document.querySelectorAll('a, button, .jalur-card, .karya-item, .proses-item').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    cursor.style.width = '20px';
+    cursor.style.height = '20px';
+    ring.style.width = '60px';
+    ring.style.height = '60px';
+  });
+  el.addEventListener('mouseleave', () => {
+    cursor.style.width = '10px';
+    cursor.style.height = '10px';
+    ring.style.width = '36px';
+    ring.style.height = '36px';
+  });
+});
+
+// NAV SCROLL
+const nav = document.getElementById('mainNav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// SCROLL DOTS
+const sections = ['hero','jalur','karya','proses','kontak'];
+const dots = document.querySelectorAll('.scroll-dot');
+function updateDots() {
+  const scroll = window.scrollY + window.innerHeight / 2;
+  sections.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const top = el.offsetTop;
+    const bot = top + el.offsetHeight;
+    dots[i]?.classList.toggle('active', scroll >= top && scroll < bot);
+  });
+}
+window.addEventListener('scroll', updateDots);
+
+// DAY / NIGHT THEME
+let currentTheme = 'day';
+let themeTimer = null;
+
+function setTheme(theme, resetTimer = true) {
+  currentTheme = theme;
+  const slideDay   = document.getElementById('slideDay');
+  const slideNight = document.getElementById('slideNight');
+  const pillDay    = document.getElementById('pillDay');
+  const pillNight  = document.getElementById('pillNight');
+
+  if (theme === 'day') {
+    slideDay.classList.add('active');
+    slideNight.classList.remove('active');
+    pillDay.classList.add('active-pill');
+    pillNight.classList.remove('active-pill');
+  } else {
+    slideNight.classList.add('active');
+    slideDay.classList.remove('active');
+    pillNight.classList.add('active-pill');
+    pillDay.classList.remove('active-pill');
+  }
+
+  if (resetTimer) {
+    clearInterval(themeTimer);
+    themeTimer = setInterval(autoCycle, 6000);
+  }
+}
+
+function autoCycle() {
+  setTheme(currentTheme === 'day' ? 'night' : 'day', false);
+}
+
+// Start auto-cycle after loader hides
+setTimeout(() => {
+  themeTimer = setInterval(autoCycle, 6000);
+}, 2500);
+
+// PARALLAX HERO — slides parallax on scroll
+window.addEventListener('scroll', () => {
+  const y = window.scrollY;
+  document.getElementById('slideDay').style.transform   = `translateY(${y * 0.35}px)`;
+  document.getElementById('slideNight').style.transform = `translateY(${y * 0.35}px)`;
+}, { passive: true });
+
+// REVEAL ON SCROLL
+const revealEls = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.15 });
+revealEls.forEach(el => observer.observe(el));
+
+// COUNTER ANIMATION
+function animateCounter(el, target) {
+  let start = 0;
+  const dur = 1500;
+  const startTime = performance.now();
+  function update(now) {
+    const t = Math.min((now - startTime) / dur, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.floor(ease * target);
+    if (t < 1) requestAnimationFrame(update);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(update);
+}
+const statsObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const nums = e.target.querySelectorAll('.stat-num[data-target]');
+      nums.forEach(n => animateCounter(n, parseInt(n.dataset.target)));
+      statsObs.disconnect();
+    }
+  });
+}, { threshold: 0.3 });
+const statsSection = document.getElementById('stats');
+if (statsSection) statsObs.observe(statsSection);
+
+// KARYA SLIDER
+let activeKarya = 0;
+function setActiveKarya(index) {
+  const items = document.querySelectorAll('.karya-item');
+  items.forEach((item, i) => item.classList.toggle('active', i === index));
+  activeKarya = index;
+}
+document.getElementById('karyaNext').addEventListener('click', () => {
+  const total = document.querySelectorAll('.karya-item').length;
+  setActiveKarya((activeKarya + 1) % total);
+});
+document.getElementById('karyaPrev').addEventListener('click', () => {
+  const total = document.querySelectorAll('.karya-item').length;
+  setActiveKarya((activeKarya - 1 + total) % total);
+});
+
+// SMOOTH ANCHOR SCROLL
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) {
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth' });
+    }
+  });
+});
+</script>
+</body>
+</html>
